@@ -80,3 +80,18 @@ def create_maintenance(resource_id: int, data: MaintenanceIn,
         maintenance=MaintenanceOut.model_validate(maintenance),
         cancelled_reservations=len(affected),
     )
+
+
+periods_router = APIRouter(prefix="/api/maintenance", tags=["Maintenance"])
+
+
+@periods_router.delete("/{maintenance_id}", status_code=204)
+def delete_maintenance(maintenance_id: int,
+                       _admin=Depends(require_roles("ADMIN")),
+                       db: Session = Depends(get_db)):
+    maintenance = db.get(Maintenance, maintenance_id)
+    if maintenance is None:
+        raise HTTPException(status_code=404,
+                            detail="Perioada de mentenanta nu exista")
+    db.delete(maintenance)
+    db.commit()

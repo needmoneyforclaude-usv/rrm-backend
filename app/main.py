@@ -18,6 +18,7 @@ app.include_router(users.router)
 app.include_router(resources.router)
 app.include_router(reservations.router)
 app.include_router(maintenance.router)
+app.include_router(maintenance.periods_router)
 app.include_router(notifications.router)
 
 
