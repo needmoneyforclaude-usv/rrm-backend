@@ -20,6 +20,9 @@ Dupa `db/RRM.sql` se ruleaza, in ordine, scripturile din `db/migrations/`:
 psql -U postgres -d rrm -f db/migrations/001_resources_test_data.sql
 psql -U postgres -d rrm -f db/migrations/002_maintenance_admin.sql
 psql -U postgres -d rrm -f db/migrations/003_hash_test_passwords.sql
+psql -U postgres -d rrm -f db/migrations/004_users_teams.sql
+psql -U postgres -d rrm -f db/migrations/005_reservations_constraints.sql
+psql -U postgres -d rrm -f db/migrations/006_notifications.sql
 ```
 
 (sau din pgAdmin: Query Tool, deschizi fisierul si il rulezi)
@@ -39,3 +42,9 @@ Swagger: http://localhost:8000/docs
 `POST /api/auth/login` intoarce un token JWT. In Swagger apesi **Authorize**
 si pui tokenul; endpoint-urile protejate il citesc din headerul
 `Authorization: Bearer <token>`.
+
+## Teste
+
+```
+pytest
+```
