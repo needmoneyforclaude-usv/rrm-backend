@@ -23,6 +23,7 @@ psql -U postgres -d rrm -f db/migrations/003_hash_test_passwords.sql
 psql -U postgres -d rrm -f db/migrations/004_users_teams.sql
 psql -U postgres -d rrm -f db/migrations/005_reservations_constraints.sql
 psql -U postgres -d rrm -f db/migrations/006_notifications.sql
+psql -U postgres -d rrm -f db/migrations/007_reservations_created_at.sql
 ```
 
 (sau din pgAdmin: Query Tool, deschizi fisierul si il rulezi)
