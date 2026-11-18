@@ -6,9 +6,11 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_roles
-from app.models import Maintenance, Resource
-from app.schemas import MaintenanceOut, ReservationOut
-from app.services.reservations import overlapping_reservations
+from app.models import Maintenance, Resource, User
+from app.schemas import (MaintenanceCreated, MaintenanceIn, MaintenanceOut,
+                         ReservationOut)
+from app.services.notifications import notify_team
+from app.services.reservations import describe, overlapping_reservations
 
 router = APIRouter(prefix="/api/resources", tags=["Maintenance"])
 
@@ -48,3 +50,33 @@ def get_affected_reservations(resource_id: int, start_time: datetime,
             detail="Ora de sfarsit trebuie sa fie dupa ora de start",
         )
     return overlapping_reservations(db, resource_id, start_time, end_time)
+
+
+@router.post("/{resource_id}/maintenance",
+             response_model=MaintenanceCreated, status_code=201)
+def create_maintenance(resource_id: int, data: MaintenanceIn,
+                       admin: User = Depends(require_roles("ADMIN")),
+                       db: Session = Depends(get_db)):
+    """Seteaza mentenanta si anuleaza rezervarile active din interval."""
+    _get_resource(db, resource_id)
+    maintenance = Maintenance(resource_id=resource_id,
+                              start_time=data.start_time,
+                              end_time=data.end_time,
+                              reason=data.reason,
+                              admin_id=admin.id)
+    db.add(maintenance)
+
+    affected = overlapping_reservations(db, resource_id, data.start_time,
+                                        data.end_time)
+    for reservation in affected:
+        reservation.status = "CANCELLED"
+        notify_team(db, reservation.team_id,
+                    "Rezervare anulata din cauza mentenantei: "
+                    f"{describe(reservation)}",
+                    reservation.id)
+    db.commit()
+    db.refresh(maintenance)
+    return MaintenanceCreated(
+        maintenance=MaintenanceOut.model_validate(maintenance),
+        cancelled_reservations=len(affected),
+    )
