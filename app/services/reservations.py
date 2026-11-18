@@ -3,14 +3,22 @@
 Doua intervale [a_start, a_end) si [b_start, b_end) se suprapun daca
 a_start < b_end si a_end > b_start.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import Maintenance, Reservation
 
 ACTIVE_STATUSES = ("PENDING", "CONFIRMED")
+PENDING_MINUTES = 10
+
+
+def pending_expired(reservation: Reservation) -> bool:
+    if reservation.status != "PENDING" or reservation.created_at is None:
+        return False
+    limit = reservation.created_at + timedelta(minutes=PENDING_MINUTES)
+    return datetime.now() > limit
 
 
 def overlapping_reservations(db: Session, resource_id: int,
@@ -19,7 +27,12 @@ def overlapping_reservations(db: Session, resource_id: int,
                              ) -> list[Reservation]:
     query = select(Reservation).where(
         Reservation.resource_id == resource_id,
-        Reservation.status.in_(ACTIVE_STATUSES),
+        or_(
+            Reservation.status == "CONFIRMED",
+            and_(Reservation.status == "PENDING",
+                 Reservation.created_at > datetime.now()
+                 - timedelta(minutes=PENDING_MINUTES)),
+        ),
         Reservation.start_time < end_time,
         Reservation.end_time > start_time,
     )
