@@ -139,7 +139,8 @@ def confirm_reservation(reservation_id: int,
 
     reservation.status = "CONFIRMED"
     notify_team(db, reservation.team_id,
-                f"Rezervare confirmata: {describe(reservation)}")
+                f"Rezervare confirmata: {describe(reservation)}",
+                reservation.id)
     db.commit()
     db.refresh(reservation)
     return reservation
@@ -184,7 +185,8 @@ def cancel_reservation(reservation_id: int,
 
     reservation.status = "CANCELLED"
     notify_team(db, reservation.team_id,
-                f"Rezervare anulata: {describe(reservation)}")
+                f"Rezervare anulata: {describe(reservation)}",
+                reservation.id)
     db.commit()
     db.refresh(reservation)
     return reservation
