@@ -67,6 +67,7 @@ class NotificationOut(BaseModel):
 
     id: int
     user_id: int
+    reservation_id: int | None = None
     message: str
     is_read: bool
     created_at: datetime
