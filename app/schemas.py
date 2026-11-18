@@ -125,3 +125,27 @@ class MaintenanceOut(BaseModel):
     end_time: datetime
     reason: str | None
     admin_id: int | None
+
+
+class MaintenanceIn(BaseModel):
+    start_time: datetime
+    end_time: datetime
+    reason: str | None = Field(default=None, max_length=255)
+
+    @field_validator("start_time", "end_time")
+    @classmethod
+    def to_local_naive(cls, value: datetime) -> datetime:
+        if value.tzinfo is not None:
+            value = value.astimezone().replace(tzinfo=None)
+        return value
+
+    @model_validator(mode="after")
+    def check_interval(self):
+        if self.end_time <= self.start_time:
+            raise ValueError("Ora de sfarsit trebuie sa fie dupa ora de start")
+        return self
+
+
+class MaintenanceCreated(BaseModel):
+    maintenance: MaintenanceOut
+    cancelled_reservations: int
