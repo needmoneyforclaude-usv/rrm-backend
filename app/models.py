@@ -87,6 +87,9 @@ class Reservation(Base):
     discount: Mapped[float] = mapped_column(Numeric(5, 2), default=0)
     final_price: Mapped[float | None] = mapped_column(Numeric(10, 2))
     status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now()
+    )
 
     resource: Mapped["Resource"] = relationship()
 
