@@ -1,8 +1,7 @@
 """Calculul pretului unei rezervari.
 
-Deocamdata se calculeaza doar pretul de baza (ore x pret pe ora).
-Reducerea de loyalty (5% la fiecare 2 ani de afiliere, maxim 25%) se
-adauga in NEED-26, in functia calculate_discount.
+Pret de baza = ore x pret pe ora. Se aplica reducerea de loyalty:
+5% pentru fiecare 2 ani completi de afiliere, maxim 25%.
 """
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -20,9 +19,22 @@ def _money(value: Decimal) -> Decimal:
     return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+DISCOUNT_PER_PERIOD = 5
+YEARS_PER_PERIOD = 2
+MAX_DISCOUNT = 25
+
+
+def full_years(start: date, end: date) -> int:
+    years = end.year - start.year
+    if (end.month, end.day) < (start.month, start.day):
+        years -= 1
+    return max(years, 0)
+
+
 def calculate_discount(affiliation_date: date, on_date: date) -> Decimal:
-    """Procentul de reducere. TODO NEED-26: regula de loyalty."""
-    return Decimal("0")
+    """Procentul de reducere in functie de vechimea afilierii."""
+    periods = full_years(affiliation_date, on_date) // YEARS_PER_PERIOD
+    return Decimal(min(periods * DISCOUNT_PER_PERIOD, MAX_DISCOUNT))
 
 
 def calculate_price(price_per_hour, start_time: datetime, end_time: datetime,
