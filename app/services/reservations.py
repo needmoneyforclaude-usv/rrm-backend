@@ -21,6 +21,19 @@ def pending_expired(reservation: Reservation) -> bool:
     return datetime.now() > limit
 
 
+def expire_stale_pending(db: Session, resource_id: int) -> None:
+    """Marcheaza EXPIRED rezervarile PENDING neconfirmate la timp."""
+    limit = datetime.now() - timedelta(minutes=PENDING_MINUTES)
+    query = select(Reservation).where(
+        Reservation.resource_id == resource_id,
+        Reservation.status == "PENDING",
+        Reservation.created_at <= limit,
+    )
+    for reservation in db.scalars(query):
+        reservation.status = "EXPIRED"
+    db.flush()
+
+
 def overlapping_reservations(db: Session, resource_id: int,
                              start_time: datetime, end_time: datetime,
                              exclude_id: int | None = None
