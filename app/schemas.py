@@ -149,3 +149,10 @@ class MaintenanceIn(BaseModel):
 class MaintenanceCreated(BaseModel):
     maintenance: MaintenanceOut
     cancelled_reservations: int
+
+
+class TeamOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
