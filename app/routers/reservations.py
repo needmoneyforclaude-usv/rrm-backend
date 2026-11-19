@@ -11,9 +11,11 @@ from app.models import Reservation, Resource, User
 from app.schemas import ReservationIn, ReservationOut, SlotOut
 from app.services.notifications import notify_team
 from app.services.pricing import calculate_price
-from app.services.reservations import (describe, find_conflict,
+from app.services.reservations import (describe, expire_stale_pending,
+                                       find_conflict,
                                        overlapping_maintenance,
-                                       overlapping_reservations)
+                                       overlapping_reservations,
+                                       pending_expired)
 
 router = APIRouter(prefix="/api/reservations", tags=["Reservations"])
 
@@ -78,6 +80,7 @@ def create_reservation(data: ReservationIn,
     if resource is None:
         raise HTTPException(status_code=404, detail="Resursa nu exista")
 
+    expire_stale_pending(db, resource.id)
     conflict = find_conflict(db, resource.id, data.start_time, data.end_time)
     if conflict:
         raise HTTPException(status_code=409, detail=conflict)
@@ -126,6 +129,13 @@ def confirm_reservation(reservation_id: int,
     if reservation.status != "PENDING":
         raise HTTPException(status_code=409,
                             detail="Doar rezervarile PENDING pot fi confirmate")
+    if pending_expired(reservation):
+        reservation.status = "EXPIRED"
+        db.commit()
+        raise HTTPException(
+            status_code=410,
+            detail="Rezervarea a expirat (nu a fost confirmata in 10 minute)",
+        )
     if reservation.start_time <= datetime.now():
         reservation.status = "CANCELLED"
         db.commit()
