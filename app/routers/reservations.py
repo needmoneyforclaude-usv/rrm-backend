@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_current_user, get_optional_user, require_roles
 from app.models import Reservation, Resource, User
-from app.schemas import ConfirmIn, ReservationIn, ReservationOut, SlotOut
+from app.schemas import (CancelIn, ConfirmIn, ReservationIn, ReservationOut,
+                         SlotOut)
 from app.services.notifications import notify_team
 from app.services.pricing import calculate_price
 from app.services.reservations import (describe, expire_stale_pending,
@@ -190,6 +191,7 @@ def get_reservation(reservation_id: int,
 
 @router.post("/{reservation_id}/cancel", response_model=ReservationOut)
 def cancel_reservation(reservation_id: int,
+                       data: CancelIn | None = None,
                        user: User = Depends(require_roles("LEAD")),
                        db: Session = Depends(get_db)):
     """Anulare de catre Team Lead, doar daca rezervarea nu a inceput."""
@@ -206,9 +208,10 @@ def cancel_reservation(reservation_id: int,
     was_confirmed = reservation.status == "CONFIRMED"
     reservation.status = "CANCELLED"
     if was_confirmed:
-        notify_team(db, reservation.team_id,
-                    f"Rezervare anulata: {describe(reservation)}",
-                    reservation.id)
+        message = f"Rezervare anulata: {describe(reservation)}"
+        if data is not None and data.reason:
+            message += f" (motiv: {data.reason.strip()})"
+        notify_team(db, reservation.team_id, message, reservation.id)
     db.commit()
     db.refresh(reservation)
     return reservation

@@ -164,3 +164,7 @@ class TeamOut(BaseModel):
 
 class ConfirmIn(BaseModel):
     purpose: str | None = Field(default=None, max_length=255)
+
+
+class CancelIn(BaseModel):
+    reason: str | None = Field(default=None, max_length=200)
