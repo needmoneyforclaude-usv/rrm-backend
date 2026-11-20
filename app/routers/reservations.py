@@ -21,7 +21,8 @@ router = APIRouter(prefix="/api/reservations", tags=["Reservations"])
 
 DAY_START_HOUR = 8
 DAY_END_HOUR = 20
-DAYS_IN_WEEK = 7
+SLOT_HOURS = 2
+WORK_DAYS = 5
 
 
 def _overlaps(start, end, items) -> bool:
@@ -32,13 +33,13 @@ def _overlaps(start, end, items) -> bool:
 @router.get("/availability", response_model=list[SlotOut])
 def get_availability(resource_id: int, week: date,
                      db: Session = Depends(get_db)):
-    """Sloturile de cate o ora (08-20) din saptamana care contine `week`."""
+    """Sloturile de 2 ore (08-20, luni-vineri) din saptamana lui `week`."""
     if db.get(Resource, resource_id) is None:
         raise HTTPException(status_code=404, detail="Resursa nu exista")
 
     monday = week - timedelta(days=week.weekday())
     week_start = datetime.combine(monday, time(0, 0))
-    week_end = week_start + timedelta(days=DAYS_IN_WEEK)
+    week_end = week_start + timedelta(days=WORK_DAYS)
     reservations = overlapping_reservations(db, resource_id,
                                             week_start, week_end)
     maintenance = overlapping_maintenance(db, resource_id,
@@ -46,11 +47,11 @@ def get_availability(resource_id: int, week: date,
     now = datetime.now()
 
     slots = []
-    for day in range(DAYS_IN_WEEK):
+    for day in range(WORK_DAYS):
         current_day = monday + timedelta(days=day)
-        for hour in range(DAY_START_HOUR, DAY_END_HOUR):
+        for hour in range(DAY_START_HOUR, DAY_END_HOUR, SLOT_HOURS):
             start = datetime.combine(current_day, time(hour, 0))
-            end = start + timedelta(hours=1)
+            end = start + timedelta(hours=SLOT_HOURS)
             if _overlaps(start, end, maintenance):
                 status = "MAINTENANCE"
             elif _overlaps(start, end, reservations):
