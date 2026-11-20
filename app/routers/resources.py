@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -5,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_roles
-from app.models import Category, Resource
+from app.models import Category, Maintenance, Resource
 from app.schemas import CategoryOut, ResourceIn, ResourceOut
 
 router = APIRouter(prefix="/api", tags=["Resources"])
@@ -27,7 +29,15 @@ def get_resources(category_id: int | None = None,
     query = select(Resource).order_by(Resource.id)
     if category_id is not None:
         query = query.where(Resource.category_id == category_id)
-    return db.scalars(query).all()
+    resources = db.scalars(query).all()
+
+    now = datetime.now()
+    in_maintenance = set(db.scalars(
+        select(Maintenance.resource_id).where(Maintenance.start_time <= now,
+                                              Maintenance.end_time > now)
+    ))
+    return [ResourceOut.model_validate(r).model_copy(
+        update={"in_maintenance": r.id in in_maintenance}) for r in resources]
 
 
 @router.get("/resources/{resource_id}", response_model=ResourceOut)

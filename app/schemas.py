@@ -22,6 +22,7 @@ class ResourceOut(ResourceIn):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    in_maintenance: bool = False
 
 
 class RegisterRequest(BaseModel):
