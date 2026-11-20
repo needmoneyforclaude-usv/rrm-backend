@@ -121,6 +121,7 @@ class ReservationOut(BaseModel):
     final_price: float | None
     status: str
     purpose: str | None = None
+    created_at: datetime | None = None
 
 
 class MaintenanceOut(BaseModel):
