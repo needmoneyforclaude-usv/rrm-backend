@@ -1,10 +1,24 @@
+import runpy
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import (auth, maintenance, notifications, reservations,
                          resources, statistics, teams, users)
 
-app = FastAPI(title="Research Resource Manager API")
+MIGRATE_SCRIPT = Path(__file__).resolve().parent.parent / "db" / "migrate.py"
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # la pornire se aplica migrarile care lipsesc din baza de date
+    runpy.run_path(str(MIGRATE_SCRIPT), run_name="__main__")
+    yield
+
+
+app = FastAPI(title="Research Resource Manager API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
