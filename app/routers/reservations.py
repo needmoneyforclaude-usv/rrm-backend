@@ -10,7 +10,7 @@ from app.deps import get_current_user, get_optional_user, require_roles
 from app.models import Reservation, Resource, User
 from app.schemas import (CancelIn, ConfirmIn, ReservationIn, ReservationOut,
                          SlotOut)
-from app.services.notifications import notify_team
+from app.services.notifications import notify_team, notify_user
 from app.services.pricing import calculate_price
 from app.services.reservations import (describe, expire_stale_pending,
                                        find_conflict,
@@ -169,14 +169,33 @@ def confirm_reservation(reservation_id: int,
 
 @router.get("", response_model=list[ReservationOut])
 def get_team_reservations(status: str | None = None,
+                          resource_id: int | None = None,
+                          team_id: int | None = None,
+                          date_from: date | None = None,
+                          date_to: date | None = None,
                           user: User = Depends(get_current_user),
                           db: Session = Depends(get_db)):
-    """Rezervarile echipei utilizatorului logat (adminul le vede pe toate)."""
+    """Rezervarile echipei utilizatorului logat.
+
+    Adminul le vede pe toate si poate filtra dupa resursa si echipa.
+    `date_from` / `date_to` (inclusiv) pastreaza doar rezervarile care
+    se suprapun cu acele zile, pentru calendar.
+    """
     query = select(Reservation).order_by(Reservation.start_time.desc())
     if user.role != "ADMIN":
         if user.team_id is None:
             return []
         query = query.where(Reservation.team_id == user.team_id)
+    elif team_id is not None:
+        query = query.where(Reservation.team_id == team_id)
+    if resource_id is not None:
+        query = query.where(Reservation.resource_id == resource_id)
+    if date_from is not None:
+        query = query.where(
+            Reservation.end_time > datetime.combine(date_from, time(0, 0)))
+    if date_to is not None:
+        query = query.where(Reservation.start_time < datetime.combine(
+            date_to + timedelta(days=1), time(0, 0)))
     if status:
         query = query.where(Reservation.status == status.upper())
     return db.scalars(query).all()
@@ -192,9 +211,9 @@ def get_reservation(reservation_id: int,
 @router.post("/{reservation_id}/cancel", response_model=ReservationOut)
 def cancel_reservation(reservation_id: int,
                        data: CancelIn | None = None,
-                       user: User = Depends(require_roles("LEAD")),
+                       user: User = Depends(require_roles("LEAD", "ADMIN")),
                        db: Session = Depends(get_db)):
-    """Anulare de catre Team Lead, doar daca rezervarea nu a inceput."""
+    """Anulare de catre Team Lead sau admin, doar daca nu a inceput."""
     reservation = get_team_reservation(db, reservation_id, user)
     if reservation.status == "CANCELLED":
         raise HTTPException(status_code=409,
@@ -206,12 +225,19 @@ def cancel_reservation(reservation_id: int,
         )
 
     was_confirmed = reservation.status == "CONFIRMED"
+    by_admin = user.role == "ADMIN"
     reservation.status = "CANCELLED"
-    if was_confirmed:
-        message = f"Rezervare anulata: {describe(reservation)}"
+    if was_confirmed or by_admin:
+        prefix = ("Rezervare anulata de administrator" if by_admin
+                  else "Rezervare anulata")
+        message = f"{prefix}: {describe(reservation)}"
         if data is not None and data.reason:
             message += f" (motiv: {data.reason.strip()})"
-        notify_team(db, reservation.team_id, message, reservation.id)
+        if was_confirmed:
+            notify_team(db, reservation.team_id, message, reservation.id)
+        else:
+            # o rezervare PENDING o stie doar cel care a creat-o
+            notify_user(db, reservation.user_id, message, reservation.id)
     db.commit()
     db.refresh(reservation)
     return reservation
