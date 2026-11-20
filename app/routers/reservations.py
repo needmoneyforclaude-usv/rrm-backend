@@ -169,14 +169,23 @@ def confirm_reservation(reservation_id: int,
 
 @router.get("", response_model=list[ReservationOut])
 def get_team_reservations(status: str | None = None,
+                          resource_id: int | None = None,
+                          team_id: int | None = None,
                           user: User = Depends(get_current_user),
                           db: Session = Depends(get_db)):
-    """Rezervarile echipei utilizatorului logat (adminul le vede pe toate)."""
+    """Rezervarile echipei utilizatorului logat.
+
+    Adminul le vede pe toate si poate filtra dupa resursa si echipa.
+    """
     query = select(Reservation).order_by(Reservation.start_time.desc())
     if user.role != "ADMIN":
         if user.team_id is None:
             return []
         query = query.where(Reservation.team_id == user.team_id)
+    elif team_id is not None:
+        query = query.where(Reservation.team_id == team_id)
+    if resource_id is not None:
+        query = query.where(Reservation.resource_id == resource_id)
     if status:
         query = query.where(Reservation.status == status.upper())
     return db.scalars(query).all()
