@@ -193,10 +193,12 @@ def cancel_reservation(reservation_id: int,
             detail="Rezervarea a inceput deja si nu mai poate fi anulata",
         )
 
+    was_confirmed = reservation.status == "CONFIRMED"
     reservation.status = "CANCELLED"
-    notify_team(db, reservation.team_id,
-                f"Rezervare anulata: {describe(reservation)}",
-                reservation.id)
+    if was_confirmed:
+        notify_team(db, reservation.team_id,
+                    f"Rezervare anulata: {describe(reservation)}",
+                    reservation.id)
     db.commit()
     db.refresh(reservation)
     return reservation
