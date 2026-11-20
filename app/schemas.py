@@ -16,6 +16,7 @@ class ResourceIn(BaseModel):
     description: str | None = None
     price_per_hour: float = Field(ge=0)
     category_id: int | None = None
+    image_url: str | None = Field(default=None, max_length=255)
 
 
 class ResourceOut(ResourceIn):

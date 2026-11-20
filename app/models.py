@@ -46,6 +46,7 @@ class Resource(Base):
     category_id: Mapped[int | None] = mapped_column(
         ForeignKey("categories.id")
     )
+    image_url: Mapped[str | None] = mapped_column(String(255))
 
 
 class Maintenance(Base):
