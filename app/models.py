@@ -93,7 +93,21 @@ class Reservation(Base):
     )
 
     resource: Mapped["Resource"] = relationship()
+    user: Mapped["User"] = relationship()
+    team: Mapped["Team"] = relationship()
 
     @property
     def resource_name(self) -> str | None:
         return self.resource.name if self.resource else None
+
+    @property
+    def user_name(self) -> str | None:
+        return self.user.name if self.user else None
+
+    @property
+    def user_email(self) -> str | None:
+        return self.user.email if self.user else None
+
+    @property
+    def team_name(self) -> str | None:
+        return self.team.name if self.team else None
