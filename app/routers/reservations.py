@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_current_user, require_roles
 from app.models import Reservation, Resource, User
-from app.schemas import ReservationIn, ReservationOut, SlotOut
+from app.schemas import ConfirmIn, ReservationIn, ReservationOut, SlotOut
 from app.services.notifications import notify_team
 from app.services.pricing import calculate_price
 from app.services.reservations import (describe, expire_stale_pending,
@@ -122,6 +122,7 @@ def get_team_reservation(db: Session, reservation_id: int,
 
 @router.post("/{reservation_id}/confirm", response_model=ReservationOut)
 def confirm_reservation(reservation_id: int,
+                        data: ConfirmIn | None = None,
                         user: User = Depends(require_roles("LEAD")),
                         db: Session = Depends(get_db)):
     """PENDING -> CONFIRMED. Membrii echipei primesc notificare."""
@@ -148,6 +149,8 @@ def confirm_reservation(reservation_id: int,
         raise HTTPException(status_code=409, detail=conflict)
 
     reservation.status = "CONFIRMED"
+    if data is not None and data.purpose:
+        reservation.purpose = data.purpose.strip()
     notify_team(db, reservation.team_id,
                 f"Rezervare confirmata: {describe(reservation)}",
                 reservation.id)
