@@ -1,4 +1,8 @@
+import base64
+import binascii
+import time
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -8,9 +12,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import require_roles
 from app.models import Category, Maintenance, Resource
-from app.schemas import CategoryOut, ResourceIn, ResourceOut
+from app.schemas import CategoryOut, ImageUpload, ResourceIn, ResourceOut
 
 router = APIRouter(prefix="/api", tags=["Resources"])
+
+IMAGES_DIR = Path(__file__).resolve().parents[2] / "static" / "images"
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 
 def _check_category(db: Session, category_id: int | None):
@@ -91,3 +99,33 @@ def delete_resource(resource_id: int,
             status_code=409,
             detail="Resursa are rezervari sau mentenanta si nu poate fi stearsa",
         )
+
+
+@router.post("/resources/{resource_id}/image", response_model=ResourceOut)
+def upload_resource_image(resource_id: int, data: ImageUpload,
+                          _admin=Depends(require_roles("ADMIN")),
+                          db: Session = Depends(get_db)):
+    """Salveaza poza resursei (trimisa ca base64) in static/images."""
+    resource = db.get(Resource, resource_id)
+    if resource is None:
+        raise HTTPException(status_code=404, detail="Resursa nu exista")
+    extension = Path(data.filename).suffix.lower()
+    if extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400,
+                            detail="Imaginea trebuie sa fie jpg, png sau webp")
+    try:
+        content = base64.b64decode(data.content_base64, validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(status_code=400, detail="Imagine invalida")
+    if len(content) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=400,
+                            detail="Imaginea poate avea maxim 5 MB")
+
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+    # timestamp in nume ca browserul sa nu tina minte poza veche
+    name = f"resource-{resource.id}-{int(time.time())}{extension}"
+    (IMAGES_DIR / name).write_bytes(content)
+    resource.image_url = f"/static/images/{name}"
+    db.commit()
+    db.refresh(resource)
+    return resource

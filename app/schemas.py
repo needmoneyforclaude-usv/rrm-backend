@@ -183,3 +183,8 @@ class WeekStats(BaseModel):
     active_reservations: int
     in_maintenance: int
     resources: list[ResourceStats]
+
+
+class ImageUpload(BaseModel):
+    filename: str = Field(max_length=200)
+    content_base64: str
