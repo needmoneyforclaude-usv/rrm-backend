@@ -14,7 +14,13 @@ copy .env.example .env
 In `.env` pui parola de la PostgreSQL si un `JWT_SECRET` lung, random.
 Baza trebuie sa existe (scriptul e in `db/RRM.sql`).
 
-Dupa `db/RRM.sql` se ruleaza, in ordine, scripturile din `db/migrations/`:
+Dupa `db/RRM.sql` se ruleaza migrarile. Cel mai simplu:
+
+```
+python db/migrate.py
+```
+
+Scriptul ruleaza doar migrarile care nu au fost aplicate inca. Manual, in ordine:
 
 ```
 psql -U postgres -d rrm -f db/migrations/001_resources_test_data.sql
