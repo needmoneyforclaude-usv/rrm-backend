@@ -34,3 +34,14 @@ def require_roles(*roles: str):
         return user
 
     return checker
+
+
+def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Userul logat sau None (pentru pagini care merg si fara login)."""
+    if credentials is None:
+        return None
+    user_id = decode_access_token(credentials.credentials)
+    return db.get(User, user_id) if user_id is not None else None

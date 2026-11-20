@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.deps import get_current_user, require_roles
+from app.deps import get_current_user, get_optional_user, require_roles
 from app.models import Reservation, Resource, User
 from app.schemas import ConfirmIn, ReservationIn, ReservationOut, SlotOut
 from app.services.notifications import notify_team
@@ -32,6 +32,7 @@ def _overlaps(start, end, items) -> bool:
 
 @router.get("/availability", response_model=list[SlotOut])
 def get_availability(resource_id: int, week: date,
+                     user: User | None = Depends(get_optional_user),
                      db: Session = Depends(get_db)):
     """Sloturile de 2 ore (08-20, luni-vineri) din saptamana lui `week`."""
     if db.get(Resource, resource_id) is None:
@@ -44,6 +45,9 @@ def get_availability(resource_id: int, week: date,
                                             week_start, week_end)
     maintenance = overlapping_maintenance(db, resource_id,
                                           week_start, week_end)
+    team_id = user.team_id if user else None
+    team_reservations = [r for r in reservations
+                         if team_id is not None and r.team_id == team_id]
     now = datetime.now()
 
     slots = []
@@ -54,6 +58,8 @@ def get_availability(resource_id: int, week: date,
             end = start + timedelta(hours=SLOT_HOURS)
             if _overlaps(start, end, maintenance):
                 status = "MAINTENANCE"
+            elif _overlaps(start, end, team_reservations):
+                status = "TEAM"
             elif _overlaps(start, end, reservations):
                 status = "BOOKED"
             elif start < now:

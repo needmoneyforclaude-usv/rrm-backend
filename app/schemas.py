@@ -76,7 +76,7 @@ class NotificationOut(BaseModel):
 class SlotOut(BaseModel):
     start_time: datetime
     end_time: datetime
-    status: str  # FREE, BOOKED, MAINTENANCE, PAST
+    status: str  # FREE, BOOKED, TEAM, MAINTENANCE, PAST
 
 
 class ReservationIn(BaseModel):
