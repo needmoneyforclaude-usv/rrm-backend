@@ -36,8 +36,10 @@ class RegisterRequest(BaseModel):
     def email_usv(cls, value: str) -> str:
         value = value.strip().lower()
         local_part, _, domain = value.partition("@")
-        if not local_part or domain != "usv.ro":
-            raise ValueError("Emailul trebuie sa fie de forma nume@usv.ro")
+        if not local_part or not (domain == "usv.ro"
+                                  or domain.endswith(".usv.ro")):
+            raise ValueError("Foloseste emailul institutional (@usv.ro sau "
+                             "@student.usv.ro)")
         return value
 
 
