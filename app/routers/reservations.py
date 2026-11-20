@@ -171,11 +171,15 @@ def confirm_reservation(reservation_id: int,
 def get_team_reservations(status: str | None = None,
                           resource_id: int | None = None,
                           team_id: int | None = None,
+                          date_from: date | None = None,
+                          date_to: date | None = None,
                           user: User = Depends(get_current_user),
                           db: Session = Depends(get_db)):
     """Rezervarile echipei utilizatorului logat.
 
     Adminul le vede pe toate si poate filtra dupa resursa si echipa.
+    `date_from` / `date_to` (inclusiv) pastreaza doar rezervarile care
+    se suprapun cu acele zile, pentru calendar.
     """
     query = select(Reservation).order_by(Reservation.start_time.desc())
     if user.role != "ADMIN":
@@ -186,6 +190,12 @@ def get_team_reservations(status: str | None = None,
         query = query.where(Reservation.team_id == team_id)
     if resource_id is not None:
         query = query.where(Reservation.resource_id == resource_id)
+    if date_from is not None:
+        query = query.where(
+            Reservation.end_time > datetime.combine(date_from, time(0, 0)))
+    if date_to is not None:
+        query = query.where(Reservation.start_time < datetime.combine(
+            date_to + timedelta(days=1), time(0, 0)))
     if status:
         query = query.where(Reservation.status == status.upper())
     return db.scalars(query).all()
