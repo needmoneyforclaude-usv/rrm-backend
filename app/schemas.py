@@ -110,7 +110,10 @@ class ReservationOut(BaseModel):
     resource_id: int
     resource_name: str | None = None
     team_id: int
+    team_name: str | None = None
     user_id: int
+    user_name: str | None = None
+    user_email: str | None = None
     start_time: datetime
     end_time: datetime
     price: float | None
