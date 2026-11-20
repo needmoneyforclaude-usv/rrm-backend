@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import (auth, maintenance, notifications, reservations,
-                         resources, teams, users)
+                         resources, statistics, teams, users)
 
 app = FastAPI(title="Research Resource Manager API")
 
@@ -21,6 +21,7 @@ app.include_router(reservations.router)
 app.include_router(maintenance.router)
 app.include_router(maintenance.periods_router)
 app.include_router(notifications.router)
+app.include_router(statistics.router)
 
 
 @app.get("/")

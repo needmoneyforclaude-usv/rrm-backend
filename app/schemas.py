@@ -168,3 +168,17 @@ class ConfirmIn(BaseModel):
 
 class CancelIn(BaseModel):
     reason: str | None = Field(default=None, max_length=200)
+
+
+class ResourceStats(BaseModel):
+    resource_id: int
+    resource_name: str
+    reserved_hours: float
+    occupancy_percent: float
+
+
+class WeekStats(BaseModel):
+    week_start: date
+    active_reservations: int
+    in_maintenance: int
+    resources: list[ResourceStats]
