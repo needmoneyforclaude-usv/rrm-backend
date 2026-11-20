@@ -114,6 +114,7 @@ class ReservationOut(BaseModel):
     discount: float
     final_price: float | None
     status: str
+    purpose: str | None = None
 
 
 class MaintenanceOut(BaseModel):
@@ -156,3 +157,7 @@ class TeamOut(BaseModel):
 
     id: int
     name: str
+
+
+class ConfirmIn(BaseModel):
+    purpose: str | None = Field(default=None, max_length=255)
