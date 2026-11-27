@@ -61,6 +61,37 @@ class UserOut(BaseModel):
     team_id: int | None
 
 
+ROLES = ("MEMBER", "LEAD", "ADMIN")
+
+
+class AdminUserOut(UserOut):
+    team_name: str | None = None
+
+
+class UserUpdate(BaseModel):
+    """Campurile pe care adminul le poate schimba la un utilizator."""
+    role: str | None = None
+    team_id: int | None = None
+    affiliation_date: date | None = None
+
+    @field_validator("role")
+    @classmethod
+    def valid_role(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        value = value.upper()
+        if value not in ROLES:
+            raise ValueError("Rolul trebuie sa fie MEMBER, LEAD sau ADMIN")
+        return value
+
+    @field_validator("affiliation_date")
+    @classmethod
+    def not_in_future(cls, value: date | None) -> date | None:
+        if value is not None and value > date.today():
+            raise ValueError("Data afilierii nu poate fi in viitor")
+        return value
+
+
 class LoginResponse(BaseModel):
     token: str
     user: UserOut
