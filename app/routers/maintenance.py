@@ -10,7 +10,8 @@ from app.models import Maintenance, Resource, User
 from app.schemas import (MaintenanceCreated, MaintenanceIn, MaintenanceOut,
                          ReservationOut)
 from app.services.notifications import notify_team
-from app.services.reservations import describe, overlapping_reservations
+from app.services.reservations import (ACTIVE_STATUSES, describe,
+                                       overlapping_reservations)
 
 router = APIRouter(prefix="/api/resources", tags=["Maintenance"])
 
@@ -45,7 +46,8 @@ def get_affected_reservations(resource_id: int, start_time: datetime,
             status_code=400,
             detail="Ora de sfarsit trebuie sa fie dupa ora de start",
         )
-    return overlapping_reservations(db, resource_id, start_time, end_time)
+    return overlapping_reservations(db, resource_id, start_time, end_time,
+                                    ACTIVE_STATUSES)
 
 
 @router.post("/{resource_id}/maintenance",
@@ -62,7 +64,7 @@ def create_maintenance(resource_id: int, data: MaintenanceIn,
     db.add(maintenance)
 
     affected = overlapping_reservations(db, resource_id, data.start_time,
-                                        data.end_time)
+                                        data.end_time, ACTIVE_STATUSES)
     for reservation in affected:
         reservation.status = "CANCELLED"
         notify_team(db, reservation.team_id,

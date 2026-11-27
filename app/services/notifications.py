@@ -24,3 +24,13 @@ def notify_team(db: Session, team_id: int, message: str,
         notify_user(db, member_id, message, reservation_id)
         count += 1
     return count
+
+
+def notify_admins(db: Session, message: str,
+                  reservation_id: int | None = None) -> int:
+    admin_ids = db.scalars(select(User.id).where(User.role == "ADMIN"))
+    count = 0
+    for admin_id in admin_ids:
+        notify_user(db, admin_id, message, reservation_id)
+        count += 1
+    return count

@@ -1,45 +1,31 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.models import Maintenance, Reservation
 
 ACTIVE_STATUSES = ("PENDING", "CONFIRMED")
-PENDING_MINUTES = 10
 
 
-def pending_expired(reservation: Reservation) -> bool:
-    if reservation.status != "PENDING" or reservation.created_at is None:
-        return False
-    limit = reservation.created_at + timedelta(minutes=PENDING_MINUTES)
-    return datetime.now() > limit
-
-
-def expire_stale_pending(db: Session, resource_id: int) -> None:
-    limit = datetime.now() - timedelta(minutes=PENDING_MINUTES)
-    query = select(Reservation).where(
-        Reservation.resource_id == resource_id,
-        Reservation.status == "PENDING",
-        Reservation.created_at <= limit,
+def expire_past_pending(db: Session) -> None:
+    db.execute(
+        update(Reservation)
+        .where(Reservation.status == "PENDING",
+               Reservation.start_time <= datetime.now())
+        .values(status="EXPIRED")
     )
-    for reservation in db.scalars(query):
-        reservation.status = "EXPIRED"
     db.flush()
 
 
 def overlapping_reservations(db: Session, resource_id: int,
                              start_time: datetime, end_time: datetime,
+                             statuses: tuple[str, ...] = ("CONFIRMED",),
                              exclude_id: int | None = None
                              ) -> list[Reservation]:
     query = select(Reservation).where(
         Reservation.resource_id == resource_id,
-        or_(
-            Reservation.status == "CONFIRMED",
-            and_(Reservation.status == "PENDING",
-                 Reservation.created_at > datetime.now()
-                 - timedelta(minutes=PENDING_MINUTES)),
-        ),
+        Reservation.status.in_(statuses),
         Reservation.start_time < end_time,
         Reservation.end_time > start_time,
     )
@@ -65,7 +51,7 @@ def find_conflict(db: Session, resource_id: int, start_time: datetime,
     if overlapping_maintenance(db, resource_id, start_time, end_time):
         return "Resursa este in mentenanta in intervalul ales"
     if overlapping_reservations(db, resource_id, start_time, end_time,
-                                exclude_id):
+                                exclude_id=exclude_id):
         return "Intervalul este deja rezervat"
     return None
 
