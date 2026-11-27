@@ -35,7 +35,6 @@ def _overlaps(start, end, items) -> bool:
 def get_availability(resource_id: int, week: date,
                      user: User | None = Depends(get_optional_user),
                      db: Session = Depends(get_db)):
-    """Sloturile de 2 ore (08-20, luni-vineri) din saptamana lui `week`."""
     if db.get(Resource, resource_id) is None:
         raise HTTPException(status_code=404, detail="Resursa nu exista")
 
@@ -76,7 +75,6 @@ def get_availability(resource_id: int, week: date,
 def create_reservation(data: ReservationIn,
                        user: User = Depends(require_roles("LEAD")),
                        db: Session = Depends(get_db)):
-    """Creeaza rezervarea in starea PENDING, cu pretul calculat."""
     team_id = data.team_id if data.team_id is not None else user.team_id
     if team_id is None or team_id != user.team_id:
         raise HTTPException(status_code=403,
@@ -133,7 +131,6 @@ def confirm_reservation(reservation_id: int,
                         data: ConfirmIn | None = None,
                         user: User = Depends(require_roles("LEAD")),
                         db: Session = Depends(get_db)):
-    """PENDING -> CONFIRMED. Membrii echipei primesc notificare."""
     reservation = get_team_reservation(db, reservation_id, user)
     if reservation.status != "PENDING":
         raise HTTPException(status_code=409,
@@ -175,12 +172,6 @@ def get_team_reservations(status: str | None = None,
                           date_to: date | None = None,
                           user: User = Depends(get_current_user),
                           db: Session = Depends(get_db)):
-    """Rezervarile echipei utilizatorului logat.
-
-    Adminul le vede pe toate si poate filtra dupa resursa si echipa.
-    `date_from` / `date_to` (inclusiv) pastreaza doar rezervarile care
-    se suprapun cu acele zile, pentru calendar.
-    """
     query = select(Reservation).order_by(Reservation.start_time.desc())
     if user.role != "ADMIN":
         if user.team_id is None:
@@ -213,7 +204,6 @@ def cancel_reservation(reservation_id: int,
                        data: CancelIn | None = None,
                        user: User = Depends(require_roles("LEAD", "ADMIN")),
                        db: Session = Depends(get_db)):
-    """Anulare de catre Team Lead sau admin, doar daca nu a inceput."""
     reservation = get_team_reservation(db, reservation_id, user)
     if reservation.status == "CANCELLED":
         raise HTTPException(status_code=409,
@@ -236,7 +226,6 @@ def cancel_reservation(reservation_id: int,
         if was_confirmed:
             notify_team(db, reservation.team_id, message, reservation.id)
         else:
-            # o rezervare PENDING o stie doar cel care a creat-o
             notify_user(db, reservation.user_id, message, reservation.id)
     db.commit()
     db.refresh(reservation)

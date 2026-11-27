@@ -20,7 +20,6 @@ HASH_ITERATIONS = 600_000
 
 
 def hash_password(password: str) -> str:
-    """Intoarce hash-ul in formatul pbkdf2_sha256$iteratii$salt$hash."""
     salt = secrets.token_hex(16)
     digest = hashlib.pbkdf2_hmac(
         "sha256", password.encode(), salt.encode(), HASH_ITERATIONS
@@ -48,7 +47,6 @@ def create_access_token(user_id: int, role: str) -> str:
 
 
 def decode_access_token(token: str) -> int | None:
-    """Intoarce id-ul utilizatorului sau None daca tokenul e invalid/expirat."""
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         return int(payload["sub"])

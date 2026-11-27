@@ -11,7 +11,6 @@ from app.schemas import ResourceStats, WeekStats
 
 router = APIRouter(prefix="/api/statistics", tags=["Statistics"])
 
-# programul in care se poate rezerva: luni-vineri, 08-20
 HOURS_PER_WEEK = 5 * 12
 
 
@@ -26,7 +25,6 @@ def _overlap_hours(start: datetime, end: datetime, week_start: datetime,
 def get_week_statistics(week: date | None = None,
                         _admin=Depends(require_roles("ADMIN")),
                         db: Session = Depends(get_db)):
-    """Gradul de ocupare al resurselor in saptamana care contine `week`."""
     week = week or date.today()
     monday = week - timedelta(days=week.weekday())
     week_start = datetime.combine(monday, time(0, 0))

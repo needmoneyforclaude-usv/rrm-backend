@@ -1,8 +1,3 @@
-"""Logica de disponibilitate: verificarea suprapunerilor (no overlap).
-
-Doua intervale [a_start, a_end) si [b_start, b_end) se suprapun daca
-a_start < b_end si a_end > b_start.
-"""
 from datetime import datetime, timedelta
 
 from sqlalchemy import and_, or_, select
@@ -22,7 +17,6 @@ def pending_expired(reservation: Reservation) -> bool:
 
 
 def expire_stale_pending(db: Session, resource_id: int) -> None:
-    """Marcheaza EXPIRED rezervarile PENDING neconfirmate la timp."""
     limit = datetime.now() - timedelta(minutes=PENDING_MINUTES)
     query = select(Reservation).where(
         Reservation.resource_id == resource_id,
@@ -68,7 +62,6 @@ def overlapping_maintenance(db: Session, resource_id: int,
 def find_conflict(db: Session, resource_id: int, start_time: datetime,
                   end_time: datetime,
                   exclude_id: int | None = None) -> str | None:
-    """Intoarce motivul conflictului sau None daca intervalul e liber."""
     if overlapping_maintenance(db, resource_id, start_time, end_time):
         return "Resursa este in mentenanta in intervalul ales"
     if overlapping_reservations(db, resource_id, start_time, end_time,
@@ -78,7 +71,6 @@ def find_conflict(db: Session, resource_id: int, start_time: datetime,
 
 
 def describe(reservation: Reservation) -> str:
-    """Text scurt pentru notificari, ex: 'Sala C204, 20.11.2026 10:00-12:00'."""
     start, end = reservation.start_time, reservation.end_time
     interval = f"{start:%d.%m.%Y %H:%M}-{end:%H:%M}"
     if start.date() != end.date():

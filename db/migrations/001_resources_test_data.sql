@@ -1,6 +1,3 @@
--- NEED-20: date de test pentru catalogul de resurse.
--- Se ruleaza dupa db/RRM.sql.
-
 INSERT INTO categories (name)
 SELECT 'Laboratoare'
 WHERE NOT EXISTS (SELECT 1 FROM categories WHERE name = 'Laboratoare');

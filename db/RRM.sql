@@ -55,7 +55,6 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-
 INSERT INTO teams (name) VALUES ('Robotica'), ('AI Lab');
 
 INSERT INTO users (email, password, name, role, affiliation_date, team_id) VALUES

@@ -1,8 +1,3 @@
-"""Serviciul de notificari (in aplicatie).
-
-Notificarile se adauga in sesiunea curenta; commit-ul il face apelantul,
-ca notificarile sa fie salvate in aceeasi tranzactie cu rezervarea.
-"""
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -23,7 +18,6 @@ def notify_user(db: Session, user_id: int, message: str,
 
 def notify_team(db: Session, team_id: int, message: str,
                 reservation_id: int | None = None) -> int:
-    """Trimite mesajul tuturor membrilor echipei. Intoarce cati au primit."""
     member_ids = db.scalars(select(User.id).where(User.team_id == team_id))
     count = 0
     for member_id in member_ids:

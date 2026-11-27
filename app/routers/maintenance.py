@@ -39,10 +39,6 @@ def get_affected_reservations(resource_id: int, start_time: datetime,
                               end_time: datetime,
                               _admin=Depends(require_roles("ADMIN")),
                               db: Session = Depends(get_db)):
-    """Rezervarile active care ar fi anulate de o mentenanta in interval.
-
-    Folosit de dialogul de mentenanta inainte de salvare.
-    """
     _get_resource(db, resource_id)
     if end_time <= start_time:
         raise HTTPException(
@@ -57,7 +53,6 @@ def get_affected_reservations(resource_id: int, start_time: datetime,
 def create_maintenance(resource_id: int, data: MaintenanceIn,
                        admin: User = Depends(require_roles("ADMIN")),
                        db: Session = Depends(get_db)):
-    """Seteaza mentenanta si anuleaza rezervarile active din interval."""
     _get_resource(db, resource_id)
     maintenance = Maintenance(resource_id=resource_id,
                               start_time=data.start_time,

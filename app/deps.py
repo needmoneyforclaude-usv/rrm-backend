@@ -25,7 +25,6 @@ def get_current_user(
 
 
 def require_roles(*roles: str):
-    """Dependinta care permite accesul doar rolurilor date."""
 
     def checker(user: User = Depends(get_current_user)) -> User:
         if user.role not in roles:
@@ -40,7 +39,6 @@ def get_optional_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User | None:
-    """Userul logat sau None (pentru pagini care merg si fara login)."""
     if credentials is None:
         return None
     user_id = decode_access_token(credentials.credentials)

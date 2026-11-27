@@ -1,7 +1,3 @@
--- NEED-24: constrangeri pe reservations.
--- Pe langa verificarea din backend, baza de date nu permite doua rezervari
--- PENDING/CONFIRMED pe aceeasi resursa cu intervale care se suprapun.
-
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 ALTER TABLE reservations
