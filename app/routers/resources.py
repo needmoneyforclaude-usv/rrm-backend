@@ -5,13 +5,12 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import require_roles
-from app.models import Category, Maintenance, Resource
+from app.models import Category, Maintenance, Reservation, Resource
 from app.schemas import CategoryOut, ImageUpload, ResourceIn, ResourceOut
 
 router = APIRouter(prefix="/api", tags=["Resources"])
@@ -90,15 +89,20 @@ def delete_resource(resource_id: int,
     resource = db.get(Resource, resource_id)
     if resource is None:
         raise HTTPException(status_code=404, detail="Resursa nu exista")
-    db.delete(resource)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
+    # rezervarile raman ca istoric pentru echipe, deci nu le stergem
+    has_reservations = db.scalar(
+        select(Reservation.id).where(Reservation.resource_id == resource_id)
+        .limit(1)
+    )
+    if has_reservations is not None:
         raise HTTPException(
             status_code=409,
-            detail="Resursa are rezervari sau mentenanta si nu poate fi stearsa",
+            detail="Resursa are rezervari si nu poate fi stearsa",
         )
+    db.execute(delete(Maintenance).where(
+        Maintenance.resource_id == resource_id))
+    db.delete(resource)
+    db.commit()
 
 
 @router.post("/resources/{resource_id}/image", response_model=ResourceOut)
