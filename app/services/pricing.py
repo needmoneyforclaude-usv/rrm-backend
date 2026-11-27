@@ -1,8 +1,3 @@
-"""Calculul pretului unei rezervari.
-
-Pret de baza = ore x pret pe ora. Se aplica reducerea de loyalty:
-5% pentru fiecare 2 ani completi de afiliere, maxim 25%.
-"""
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
@@ -11,7 +6,7 @@ from decimal import ROUND_HALF_UP, Decimal
 @dataclass
 class PriceQuote:
     price: Decimal
-    discount: Decimal  # procent, ex. 10 = 10%
+    discount: Decimal
     final_price: Decimal
 
 
@@ -32,7 +27,6 @@ def full_years(start: date, end: date) -> int:
 
 
 def calculate_discount(affiliation_date: date, on_date: date) -> Decimal:
-    """Procentul de reducere in functie de vechimea afilierii."""
     periods = full_years(affiliation_date, on_date) // YEARS_PER_PERIOD
     return Decimal(min(periods * DISCOUNT_PER_PERIOD, MAX_DISCOUNT))
 

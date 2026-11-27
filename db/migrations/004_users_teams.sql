@@ -1,5 +1,3 @@
--- NEED-16: constrangeri pe users si teams + team lead-ul echipei.
-
 ALTER TABLE users
     DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users
@@ -13,7 +11,6 @@ ALTER TABLE teams
 ALTER TABLE teams
     ADD COLUMN IF NOT EXISTS lead_id INT REFERENCES users(id);
 
--- lead-ul fiecarei echipe e userul cu rolul LEAD din ea
 UPDATE teams t
 SET lead_id = (SELECT u.id FROM users u
                WHERE u.team_id = t.id AND u.role = 'LEAD'

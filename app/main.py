@@ -15,7 +15,6 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    # la pornire se aplica migrarile care lipsesc din baza de date
     runpy.run_path(str(MIGRATE_SCRIPT), run_name="__main__")
     yield
 
