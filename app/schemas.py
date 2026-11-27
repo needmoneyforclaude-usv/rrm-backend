@@ -88,6 +88,7 @@ class ReservationIn(BaseModel):
     team_id: int | None = None
     start_time: datetime
     end_time: datetime
+    purpose: str | None = Field(default=None, max_length=255)
 
     @field_validator("start_time", "end_time")
     @classmethod
@@ -166,8 +167,14 @@ class TeamOut(BaseModel):
     name: str
 
 
-class ConfirmIn(BaseModel):
-    purpose: str | None = Field(default=None, max_length=255)
+class QuoteOut(BaseModel):
+    price: float
+    discount: float
+    final_price: float
+
+
+class RejectIn(BaseModel):
+    reason: str | None = Field(default=None, max_length=200)
 
 
 class CancelIn(BaseModel):
