@@ -31,7 +31,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=6, max_length=100)
     name: str = Field(min_length=1, max_length=100)
     team_id: int | None = None
-    affiliation_date: date | None = None
+    new_team_name: str | None = Field(default=None, max_length=100)
 
     @field_validator("email")
     @classmethod
@@ -43,6 +43,21 @@ class RegisterRequest(BaseModel):
             raise ValueError("Foloseste emailul institutional (@usv.ro sau "
                              "@student.usv.ro)")
         return value
+
+    @field_validator("new_team_name")
+    @classmethod
+    def clean_team_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = " ".join(value.split())
+        return value or None
+
+    @model_validator(mode="after")
+    def one_team_choice(self):
+        if self.team_id is not None and self.new_team_name is not None:
+            raise ValueError("Alege o echipa existenta sau creeaza una noua, "
+                             "nu amandoua")
+        return self
 
 
 class LoginRequest(BaseModel):
